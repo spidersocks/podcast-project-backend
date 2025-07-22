@@ -50,6 +50,8 @@ def get_subtopic_distribution(drill_path=None):
     if len(drill_path) < 1:
         raise ValueError("drill_path must be non-empty or None for broadest topic distribution.")
     
+    drill_path = list(reversed(drill_path))
+
     def matches_drill_path(all_topics):
         if not isinstance(all_topics, list):
             return False
