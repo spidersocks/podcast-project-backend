@@ -90,13 +90,15 @@ def get_broad_topics():
     """
     return {"topics": get_subtopic_distribution()}
 
+PATH_SEPARATOR = "||"
+
 @app.get("/api/topics/drilldown/")
 def get_subtopics(path: str = Query("")):
     """
     Get subtopic distribution for a drill path.
-    path: comma-separated string, e.g. "society,fundamental rights"
+    path: separator-separated string, e.g. "society||fundamental rights"
     """
-    drill_path = [p.strip() for p in path.split(",") if p.strip()]
+    drill_path = [p.strip() for p in path.split(PATH_SEPARATOR) if p.strip()]
     if not drill_path:
         # If empty, return broadest
         return {"topics": get_subtopic_distribution()}
