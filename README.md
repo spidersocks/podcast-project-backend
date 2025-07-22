@@ -38,7 +38,6 @@ uvicorn main:app --reload
       "source_total": 100,
       "proportion": 0.25
     }
-    // ...
   ]
 }
 ```
