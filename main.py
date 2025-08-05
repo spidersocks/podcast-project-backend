@@ -84,26 +84,20 @@ def get_subtopics(path: str = Query("")):
 
 # --- Stance chart API ---
 
-STANCE_CSV = "data/minimalist_stance_df.csv"
+STANCE_Z_CSV = "data/stance_z_agg.csv"
 
-def load_stance_df():
-    return pd.read_csv(STANCE_CSV, index_col=0)
+def load_stance_z_df():
+    return pd.read_csv(STANCE_Z_CSV)
 
-@app.get("/api/stance/")
-def get_stance_data(
+@app.get("/api/stance/zscores/")
+def get_stance_z_data(
     topics: Optional[str] = Query(None, description="Comma-separated list of topics to filter (optional)")
 ):
     """
-    Returns the melted stance dataframe for the stance chart.
-    Optionally filter by topics (?topics=alexandria_ocasio-cortez,donald_trump)
+    Returns avg z-score of stance per topic per source_type.
     """
-    df = load_stance_df()
+    df = load_stance_z_df()
     if topics:
         topic_list = [t.strip() for t in topics.split(",")]
         df = df[df["topic"].isin(topic_list)]
     return {"data": df.to_dict(orient="records")}
-
-@app.get("/api/stance/topics/")
-def get_all_stance_topics():
-    df = load_stance_df()
-    return {"topics": sorted(df['topic'].unique())}
