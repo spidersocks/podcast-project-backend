@@ -110,18 +110,15 @@ AVG_SENTIMENT_CSV = "data/avg_sentiment_by_source_topic.csv"
 
 def load_topwords_df():
     df = pd.read_parquet(TOPWORDS_PARQUET)
-    # Ensure 'top_words' column is a list (if stored as string, parse with ast.literal_eval)
+    # Ensure 'top_words' is a list of dicts (if stored as string, parse)
     if df['top_words'].dtype == object:
         df['top_words'] = df['top_words'].apply(
-            lambda x: ast.literal_eval(x) if isinstance(x, str) and not isinstance(x, list) else x
+            lambda x: ast.literal_eval(x) if isinstance(x, str) else x
         )
     return df
 
 def load_avg_sentiment_df():
     df = pd.read_csv(AVG_SENTIMENT_CSV)
-    # Fill missing columns if necessary for consistency
-    if "quantile_sentiment_scaled" not in df.columns:
-        df["quantile_sentiment_scaled"] = 0.0
     return df
 
 topwords_df = load_topwords_df()
@@ -145,7 +142,8 @@ def get_topwords(
             "source_type": row["source_type"],
             "source_name": row["source_name"],
             "topic": row["topic"],
-            "top_words": list(row["top_words"]),
+            "top_words": list(row["top_words"]),  # Each: {"text": ..., "value": ...}
+            "top_words_plain": list(row["top_words_plain"])  # Optional, for inspection
         }
         for _, row in df.iterrows()
     ]}
@@ -163,6 +161,16 @@ def get_sentiment(
         df = df[df["source_name"] == source_name]
     if topic:
         df = df[df["topic"] == topic]
-    return {"data": df.to_dict(orient="records")}
+    return {"data": [
+        {
+            "source_type": row["source_type"],
+            "source_name": row["source_name"],
+            "topic": row["topic"],
+            "avg_sentiment_score": row["avg_sentiment_score"],
+            "quantile_sentiment_scaled": row["quantile_sentiment_scaled"],
+            "sentiment_label": row["sentiment_label"]
+        }
+        for _, row in df.iterrows()
+    ]}
 
 # --- END ---
