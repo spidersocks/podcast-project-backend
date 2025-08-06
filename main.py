@@ -146,7 +146,7 @@ def get_topwords(
             "source_type": row["source_type"],
             "source_name": row["source_name"],
             "topic": row["topic"],
-            "top_words": row["top_words"] if isinstance(row["top_words"], list) else [],
+            "top_words": list(row["top_words"])
         }
         for _, row in df.iterrows()
     ]}
