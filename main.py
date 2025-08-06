@@ -14,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Existing topic drilldown logic (for your other chart) ---
+# --- Topic Distribution API ---
 CSV_FILE = "data/news_chunks_w_umap.csv"
 ALL_TOPICS_COL = "all_topics"
 SOURCE_COL = "source_type"
@@ -101,3 +101,69 @@ def get_stance_z_data(
         topic_list = [t.strip() for t in topics.split(",")]
         df = df[df["topic"].isin(topic_list)]
     return {"data": df.to_dict(orient="records")}
+
+
+# --- Sentiment Word Cloud API ---
+
+TOPWORDS_PARQUET = "data/topwords_by_topic.parquet"
+AVG_SENTIMENT_CSV = "data/avg_sentiment_by_source_topic.csv"
+
+def load_topwords_df():
+    df = pd.read_parquet(TOPWORDS_PARQUET)
+    # Ensure 'top_words' column is a list (if stored as string, parse with ast.literal_eval)
+    if df['top_words'].dtype == object:
+        df['top_words'] = df['top_words'].apply(
+            lambda x: ast.literal_eval(x) if isinstance(x, str) and not isinstance(x, list) else x
+        )
+    return df
+
+def load_avg_sentiment_df():
+    df = pd.read_csv(AVG_SENTIMENT_CSV)
+    # Fill missing columns if necessary for consistency
+    if "quantile_sentiment_scaled" not in df.columns:
+        df["quantile_sentiment_scaled"] = 0.0
+    return df
+
+topwords_df = load_topwords_df()
+avg_sentiment_df = load_avg_sentiment_df()
+
+@app.get("/api/wordcloud/topwords/")
+def get_topwords(
+    source_type: Optional[str] = Query(None),
+    source_name: Optional[str] = Query(None),
+    topic: Optional[str] = Query(None)
+):
+    df = topwords_df.copy()
+    if source_type:
+        df = df[df["source_type"] == source_type]
+    if source_name:
+        df = df[df["source_name"] == source_name]
+    if topic:
+        df = df[df["topic"] == topic]
+    # Convert top_words to strings for JSON serialization if needed
+    return {"data": [
+        {
+            "source_type": row["source_type"],
+            "source_name": row["source_name"],
+            "topic": row["topic"],
+            "top_words": row["top_words"] if isinstance(row["top_words"], list) else [],
+        }
+        for _, row in df.iterrows()
+    ]}
+
+@app.get("/api/wordcloud/sentiment/")
+def get_sentiment(
+    source_type: Optional[str] = Query(None),
+    source_name: Optional[str] = Query(None),
+    topic: Optional[str] = Query(None)
+):
+    df = avg_sentiment_df.copy()
+    if source_type:
+        df = df[df["source_type"] == source_type]
+    if source_name:
+        df = df[df["source_name"] == source_name]
+    if topic:
+        df = df[df["topic"] == topic]
+    return {"data": df.to_dict(orient="records")}
+
+# --- END ---
