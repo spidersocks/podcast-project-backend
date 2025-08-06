@@ -140,13 +140,12 @@ def get_topwords(
         df = df[df["source_name"] == source_name]
     if topic:
         df = df[df["topic"] == topic]
-    # Convert top_words to strings for JSON serialization if needed
     return {"data": [
         {
             "source_type": row["source_type"],
             "source_name": row["source_name"],
             "topic": row["topic"],
-            "top_words": list(row["top_words"])
+            "top_words": list(row["top_words"]),
         }
         for _, row in df.iterrows()
     ]}
