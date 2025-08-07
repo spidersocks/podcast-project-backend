@@ -153,6 +153,32 @@ def get_topwords(
         df = df[df["source_name"] == source_name]
     if topic:
         df = df[df["topic"] == topic]
+    # Convert top_words to python list of dicts
+    def as_pylist(x):
+        # If already a list, just return
+        if isinstance(x, list):
+            return x
+        # If it's numpy array, convert to list of dicts
+        try:
+            import numpy as np
+            if isinstance(x, np.ndarray):
+                return [dict(zip(x.dtype.fields, row)) if hasattr(x, 'dtype') and x.dtype.fields else dict(row) for row in x.tolist()]
+        except ImportError:
+            pass
+        # If it's a string, try to parse
+        import ast
+        if isinstance(x, str):
+            try:
+                y = ast.literal_eval(x)
+                if isinstance(y, list):
+                    return y
+            except Exception:
+                pass
+        # fallback: empty
+        return []
+    df["top_words"] = df["top_words"].apply(as_pylist)
+    # Filter out rows with empty or invalid top_words
+    df = df[df["top_words"].apply(lambda x: isinstance(x, list) and len(x) > 0)]
     if df.empty:
         return {"data": []}, 404
     return {"data": [
