@@ -178,7 +178,7 @@ def get_sentiment(
         for _, row in df.iterrows()
     ]}
 
-    @app.get("/api/wordcloud/options/")
+@app.get("/api/wordcloud/options/")
     def get_wordcloud_options(source_type: Optional[str] = Query(None)):
         """
         Returns unique (source_type, source_name) pairs and available topics.
