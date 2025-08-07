@@ -179,26 +179,26 @@ def get_sentiment(
     ]}
 
 @app.get("/api/wordcloud/options/")
-    def get_wordcloud_options(source_type: Optional[str] = Query(None)):
-        """
-        Returns unique (source_type, source_name) pairs and available topics.
-        Optional filter: ?source_type=news or ?source_type=podcast
-        """
-        df = topwords_df.copy()
-        if source_type:
-            df = df[df["source_type"] == source_type]
+def get_wordcloud_options(source_type: Optional[str] = Query(None)):
+    """
+    Returns unique (source_type, source_name) pairs and available topics.
+    Optional filter: ?source_type=news or ?source_type=podcast
+    """
+    df = topwords_df.copy()
+    if source_type:
+        df = df[df["source_type"] == source_type]
 
-        # Unique sources
-        sources_df = df[["source_type", "source_name"]].drop_duplicates()
-        # Sort by type then name for stable UX
-        sources_df = sources_df.sort_values(by=["source_type", "source_name"], ascending=[True, True])
-        sources = sources_df.to_dict(orient="records")
+    # Unique sources
+    sources_df = df[["source_type", "source_name"]].drop_duplicates()
+    # Sort by type then name for stable UX
+    sources_df = sources_df.sort_values(by=["source_type", "source_name"], ascending=[True, True])
+    sources = sources_df.to_dict(orient="records")
 
-        # Topics (ensure all_topics appears first if present)
-        topics = sorted([t for t in df["topic"].dropna().unique().tolist()])
-        if "all_topics" in topics:
-            topics = ["all_topics"] + [t for t in topics if t != "all_topics"]
+    # Topics (ensure all_topics appears first if present)
+    topics = sorted([t for t in df["topic"].dropna().unique().tolist()])
+    if "all_topics" in topics:
+        topics = ["all_topics"] + [t for t in topics if t != "all_topics"]
 
-        return {"sources": sources, "topics": topics}
+    return {"sources": sources, "topics": topics}
 
 # --- END ---
