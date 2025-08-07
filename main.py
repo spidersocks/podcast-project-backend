@@ -20,7 +20,7 @@ ALL_TOPICS_COL = "all_topics"
 SOURCE_COL = "source_type"
 
 def load_news_df():
-    df = pd.read_csv(CSV_FILE)
+    df = pd.read_csv(CSV_FILE, usecols=["all_topics", "source_type"])
     if df[ALL_TOPICS_COL].dtype == object:
         df[ALL_TOPICS_COL] = df[ALL_TOPICS_COL].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
     return df
@@ -87,7 +87,7 @@ def get_subtopics(path: str = Query("")):
 STANCE_Z_CSV = "data/stance_z_agg.csv"
 
 def load_stance_z_df():
-    return pd.read_csv(STANCE_Z_CSV)
+    return pd.read_csv(STANCE_Z_CSV, usecols=["topic", "source_type", "stance_z"])
 
 @app.get("/api/stance/zscores/")
 def get_stance_z_data(
@@ -109,7 +109,9 @@ TOPWORDS_PARQUET = "data/topwords_by_topic.parquet"
 AVG_SENTIMENT_CSV = "data/avg_sentiment_by_source_topic.csv"
 
 def load_topwords_df():
-    df = pd.read_parquet(TOPWORDS_PARQUET)
+    df = pd.read_parquet(TOPWORDS_PARQUET, columns=[
+        "source_type", "source_name", "topic", "top_words", "top_words_plain"
+    ])
     # Ensure 'top_words' is a list of dicts (if stored as string, parse)
     if df['top_words'].dtype == object:
         df['top_words'] = df['top_words'].apply(
@@ -118,7 +120,10 @@ def load_topwords_df():
     return df
 
 def load_avg_sentiment_df():
-    df = pd.read_csv(AVG_SENTIMENT_CSV)
+    df = pd.read_csv(AVG_SENTIMENT_CSV, usecols=[
+        "source_type", "source_name", "topic",
+        "avg_sentiment_score", "quantile_sentiment_scaled", "sentiment_label"
+    ])
     return df
 
 topwords_df = load_topwords_df()
