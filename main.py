@@ -87,7 +87,7 @@ def get_subtopics(path: str = Query("")):
 STANCE_Z_CSV = "data/stance_z_agg.csv"
 
 def load_stance_z_df():
-    return pd.read_csv(STANCE_Z_CSV, usecols=["topic", "source_type", "stance_z"])
+    return pd.read_csv(STANCE_Z_CSV, usecols=["topic", "source_type", "stance_score_z"])
 
 @app.get("/api/stance/zscores/")
 def get_stance_z_data(
