@@ -126,32 +126,50 @@ def load_avg_sentiment_df():
     ])
     return df
 
+def format_topic_label(topic_key: str) -> str:
+    """
+    Converts 'topic_climate_change' -> 'Climate change'
+    """
+    if topic_key.startswith("topic_"):
+        label = topic_key[len("topic_"):]
+    else:
+        label = topic_key
+    label = label.replace("_", " ").strip().capitalize()
+    return label
+
 topwords_df = load_topwords_df()
 avg_sentiment_df = load_avg_sentiment_df()
 
-@app.get("/api/wordcloud/topwords/")
-def get_topwords(
-    source_type: Optional[str] = Query(None),
-    source_name: Optional[str] = Query(None),
-    topic: Optional[str] = Query(None)
-):
+@app.get("/api/wordcloud/options/")
+def get_wordcloud_options(source_type: Optional[str] = Query(None)):
+    """
+    Returns unique (source_type, source_name) pairs and available topics.
+    Optional filter: ?source_type=news or ?source_type=podcast
+    """
     df = topwords_df.copy()
     if source_type:
         df = df[df["source_type"] == source_type]
-    if source_name:
-        df = df[df["source_name"] == source_name]
-    if topic:
-        df = df[df["topic"] == topic]
-    return {"data": [
-        {
-            "source_type": row["source_type"],
-            "source_name": row["source_name"],
-            "topic": row["topic"],
-            "top_words": list(row["top_words"]),  # Each: {"text": ..., "value": ...}
-            "top_words_plain": list(row["top_words_plain"])  # Optional, for inspection
-        }
-        for _, row in df.iterrows()
-    ]}
+
+    # Unique sources
+    sources_df = df[["source_type", "source_name"]].drop_duplicates()
+    sources_df = sources_df.sort_values(by=["source_type", "source_name"], ascending=[True, True])
+    sources = sources_df.to_dict(orient="records")
+
+    # Topics: key and label
+    topic_keys = [t for t in df["topic"].dropna().unique().tolist()]
+    # Sort so 'all_topics' is first
+    if "all_topics" in topic_keys:
+        topic_keys = ["all_topics"] + [t for t in topic_keys if t != "all_topics"]
+
+    topics = []
+    for key in topic_keys:
+        if key == "all_topics":
+            label = "All topics"
+        else:
+            label = format_topic_label(key)
+        topics.append({"key": key, "label": label})
+
+    return {"sources": sources, "topics": topics}
 
 @app.get("/api/wordcloud/sentiment/")
 def get_sentiment(
@@ -200,5 +218,25 @@ def get_wordcloud_options(source_type: Optional[str] = Query(None)):
         topics = ["all_topics"] + [t for t in topics if t != "all_topics"]
 
     return {"sources": sources, "topics": topics}
+
+@app.get("/api/wordcloud/common_topics/")
+def get_common_topics(
+    left_source_type: str = Query(...),
+    left_source_name: str = Query(...),
+    right_source_type: str = Query(...),
+    right_source_name: str = Query(...)):
+    """
+    Returns topics discussed by both selected sources.
+    """
+    df = topwords_df.copy()
+    left_topics = set(df[
+        (df["source_type"] == left_source_type) & 
+        (df["source_name"] == left_source_name)
+    ]["topic"].dropna().unique())
+    right_topics = set(df[
+        (df["source_type"] == right_source_type) & 
+        (df["source_name"] == right_source_name)
+    ]["topic"].dropna().unique())
+    common = left_topics & right_topics
 
 # --- END ---
