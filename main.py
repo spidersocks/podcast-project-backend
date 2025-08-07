@@ -239,4 +239,21 @@ def get_common_topics(
     ]["topic"].dropna().unique())
     common = left_topics & right_topics
 
+    # Sort so 'all_topics' is first
+    topic_keys = list(common)
+    if "all_topics" in topic_keys:
+        topic_keys = ["all_topics"] + [t for t in topic_keys if t != "all_topics"]
+    else:
+        topic_keys = sorted(topic_keys)
+
+    topics = []
+    for key in topic_keys:
+        if key == "all_topics":
+            label = "All topics"
+        else:
+            label = format_topic_label(key)
+        topics.append({"key": key, "label": label})
+
+    return {"topics": topics}
+
 # --- END ---
