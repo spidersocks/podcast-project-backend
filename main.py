@@ -140,36 +140,31 @@ def format_topic_label(topic_key: str) -> str:
 topwords_df = load_topwords_df()
 avg_sentiment_df = load_avg_sentiment_df()
 
-@app.get("/api/wordcloud/options/")
-def get_wordcloud_options(source_type: Optional[str] = Query(None)):
-    """
-    Returns unique (source_type, source_name) pairs and available topics.
-    Optional filter: ?source_type=news or ?source_type=podcast
-    """
+@app.get("/api/wordcloud/topwords/")
+def get_topwords(
+    source_type: Optional[str] = Query(None),
+    source_name: Optional[str] = Query(None),
+    topic: Optional[str] = Query(None)
+):
     df = topwords_df.copy()
     if source_type:
         df = df[df["source_type"] == source_type]
-
-    # Unique sources
-    sources_df = df[["source_type", "source_name"]].drop_duplicates()
-    sources_df = sources_df.sort_values(by=["source_type", "source_name"], ascending=[True, True])
-    sources = sources_df.to_dict(orient="records")
-
-    # Topics: key and label
-    topic_keys = [t for t in df["topic"].dropna().unique().tolist()]
-    # Sort so 'all_topics' is first
-    if "all_topics" in topic_keys:
-        topic_keys = ["all_topics"] + [t for t in topic_keys if t != "all_topics"]
-
-    topics = []
-    for key in topic_keys:
-        if key == "all_topics":
-            label = "All topics"
-        else:
-            label = format_topic_label(key)
-        topics.append({"key": key, "label": label})
-
-    return {"sources": sources, "topics": topics}
+    if source_name:
+        df = df[df["source_name"] == source_name]
+    if topic:
+        df = df[df["topic"] == topic]
+    if df.empty:
+        return {"data": []}, 404
+    return {"data": [
+        {
+            "source_type": row["source_type"],
+            "source_name": row["source_name"],
+            "topic": row["topic"],
+            "top_words": row["top_words"],
+            "top_words_plain": row.get("top_words_plain") if isinstance(row, dict) else None,
+        }
+        for _, row in df.iterrows()
+    ]}
 
 @app.get("/api/wordcloud/sentiment/")
 def get_sentiment(
